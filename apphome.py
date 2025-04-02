@@ -16,8 +16,8 @@ def get_credentials(file_path="config.txt"):
 # 🔧 CONFIGURATION
 IMAP_SERVER = "192.168.206.150"
 EMAIL_USER, EMAIL_PASS = get_credentials()
-HOTLISTED_DOMAINS = {"greeksoft.co.in", "silverstream.co.in"}
-# HOTLISTED_DOMAINS={}
+# HOTLISTED_DOMAINS = {"greeksoft.co.in", "silverstream.co.in"}
+HOTLISTED_DOMAINS={}
 DB_CONFIG = {
     "dbname": "ticket_data",
     "user": "postgres",
@@ -171,7 +171,7 @@ def check_resolved_ticket():
 def get_tickets():
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('''SELECT * FROM "Ticket"''')
+    cursor.execute('''SELECT * FROM "Ticket" where "Status"='';''')
     tickets = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -197,7 +197,7 @@ def delete_ticket(ticket_id):
     conn.close()
 
 # 🎨 Streamlit UI
-# st.title("📩 Email Ticketing System")
+
 with st.sidebar:
     st.title("📩 Email Ticketing System")
     if st.button("Fetch New Emails"):
@@ -213,11 +213,7 @@ col = st.columns((2, 5, 4), gap='medium')
 with col[0]:
 
     st.markdown('#### Pending/Resolved')
-    # # Render the card in Streamlit
-    # st.markdown(card_html, unsafe_allow_html=True)
-    #
-    # # Add card styles to the page
-    # st.markdown(card_style, unsafe_allow_html=True)
+
     st.metric(label="Pending", value=len(check_pending_ticket()))
 
     st.metric(label="Resolved",value=len(check_resolved_ticket()))
@@ -235,7 +231,23 @@ with col[1]:
     # print(pending)
     pending_df = pd.DataFrame(pending, columns=["Ticket_No", "Date", "Time", "From", "Subject","Assigned_To",'Status'])
     st.dataframe(pending_df)
-        # p_count=len(pending_df)
+
+    # 🎯 Update Tickets
+    st.subheader("🔄 Update Ticket")
+    selected_ticket = st.selectbox("Select Ticket to Update", df["Ticket_No"])
+    new_status = st.selectbox("Update Status", ["Pending", "Resolved"])
+    assignee = st.text_input("Assign To")
+
+    if st.button("Update Ticket"):
+        update_ticket(selected_ticket, new_status, assignee)
+        st.success("Ticket Updated Successfully!")
+
+    # ❌ Delete Ticket
+    st.subheader("❌ Delete Ticket")
+    delete_ticket_id = st.selectbox("Select Ticket to Delete", df["Ticket_No"])
+    if st.button("Delete Ticket"):
+        delete_ticket(delete_ticket_id)
+        st.warning("Ticket Deleted!")
 
 with col[2]:
     st.markdown('#### Pending Details')
@@ -246,21 +258,6 @@ with col[2]:
 
 
 
-# 🎯 Update Tickets
-st.subheader("🔄 Update Ticket")
-selected_ticket = st.selectbox("Select Ticket to Update", df["Ticket_No"])
-new_status = st.selectbox("Update Status", ["Pending", "Resolved"])
-assignee = st.text_input("Assign To")
 
-if st.button("Update Ticket"):
-    update_ticket(selected_ticket, new_status, assignee)
-    st.success("Ticket Updated Successfully!")
-
-# ❌ Delete Ticket
-st.subheader("❌ Delete Ticket")
-delete_ticket_id = st.selectbox("Select Ticket to Delete", df["Ticket_No"])
-if st.button("Delete Ticket"):
-    delete_ticket(delete_ticket_id)
-    st.warning("Ticket Deleted!")
 
 st.sidebar.info("Refresh the page to see the latest changes.")
